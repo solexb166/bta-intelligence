@@ -2,9 +2,7 @@ require('dotenv').config({ path: __dirname + '/.env' });
 const express   = require('express');
 const cors      = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
-const initSqlJs = require('sql.js');
-const fs        = require('fs');
-const path      = require('path');
+const { Pool }  = require('pg');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -12,78 +10,72 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// ── Anthropic client ───────────────────────────────────────────────────────
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-let db;
-async function loadDb() {
-  const SQL     = await initSqlJs();
-  const dbPath  = path.join(__dirname, 'bta_mock.db');
-  const filebuf = fs.readFileSync(dbPath);
-  db = new SQL.Database(filebuf);
-  console.log('BTA mock database loaded');
-}
+// ── PostgreSQL connection ──────────────────────────────────────────────────
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-function runQuery(sql) {
+// ── Run query and return rows ──────────────────────────────────────────────
+async function runQuery(sql) {
+  const client = await pool.connect();
   try {
-    const results = db.exec(sql);
-    if (!results.length) return [];
-    const { columns, values } = results[0];
-    return values.map(row =>
-      Object.fromEntries(columns.map((col, i) => [col, row[i]]))
-    );
-  } catch (err) {
-    throw new Error(`SQL Error: ${err.message} | Query: ${sql}`);
+    const result = await client.query(sql);
+    return result.rows;
+  } finally {
+    client.release();
   }
 }
 
-const SCHEMA = `
-TABLE: dim_reporting_period
-  period_id TEXT PK (e.g. RP_2026_Q2 = latest), label, year INT, quarter INT, start_date, end_date
+// ── Get all table names from the real DB ───────────────────────────────────
+async function getSchema() {
+  const rows = await runQuery(`
+    SELECT table_schema, table_name, column_name, data_type
+    FROM information_schema.columns
+    WHERE table_schema IN ('analytics_gold', 'analytics_marts', 'api_ops')
+    ORDER BY table_name, ordinal_position;
+  `);
+  const tables = {};
+  rows.forEach(({ table_schema, table_name, column_name, data_type }) => {
+    if (!tables[`${table_schema}.${table_name}`]) tables[`${table_schema}.${table_name}`] = [];
+    tables[`${table_schema}.${table_name}`].push(`${column_name} (${data_type})`);
+  });
+  return tables;
+}
 
-TABLE: mart_bhi_brand_scores
-  period_id, brand_name, segment_type (National|Role|Province),
-  segment_value (All|Budtender|Consumer|Store Manager|Ontario|BC|AB),
-  familiarity, awareness, trial, sentiment, recommendation, nps, bhi_composite REAL, sample_n INT
+let schemaDescription = '';
 
-TABLE: mart_bhi_awareness_detail
-  period_id, brand_name, segment_type, segment_value, prompted REAL, unprompted REAL, sample_n INT
+async function loadSchema() {
+  try {
+    const tables = await getSchema();
+    const lines = Object.entries(tables).map(([name, cols]) =>
+      `TABLE: ${name}\n  ${cols.join(', ')}`
+    );
+    schemaDescription = lines.join('\n\n');
+    console.log('Schema loaded:', Object.keys(tables).join(', '));
+  } catch (err) {
+    console.error('Schema load failed:', err.message);
+    schemaDescription = '(schema unavailable)';
+  }
+}
 
-TABLE: mart_cohort_benchmarks
-  period_id, segment_type, segment_value,
-  index_name (Brand Trust|Choice Friction|Trial Intent|Rep Engagement|Employer Support|Product Knowledge|Recommendation Confidence|Platform Advocacy),
-  index_score REAL, national_avg REAL, sample_n INT
-
-TABLE: mart_user_scores
-  user_id TEXT PK, role, province, knowledge_level, consumption_type, purchase_freq,
-  recommendation_score, trial_intent, brand_trust, rep_engagement,
-  platform_nps REAL, employer_support, archetype TEXT
-
-TABLE: dim_questions
-  question_id TEXT PK, question_text, domain (Plant|Market/Brand|Platform|Professional Development|Customer Interaction),
-  index_name, strategic_importance INT (1-5)
-
-TABLE: fct_survey_responses
-  response_id INT PK, user_id, question_id, response_date, response_value, period_id
-
-TABLE: mart_nps_scores
-  period_id, segment_type, segment_value, nps_type (platform|brand), brand_name,
-  nps_score, promoters_pct, passives_pct, detractors_pct REAL, sample_n INT
-
-NOTES: Latest period is RP_2026_Q2. Always filter by segment_type and segment_value when comparing roles or provinces.
-`;
-
+// ── System prompt ──────────────────────────────────────────────────────────
 function buildSystemPrompt() {
   return `You are BTA Intelligence, a senior market research analyst for the Budtenders Association (BTA).
 
-You have access to a real SQLite database via the query_database tool. ALWAYS query the database to answer questions — never guess or invent numbers.
+You have access to a real PostgreSQL database via the query_database tool. ALWAYS query the database before answering — never guess or invent numbers.
 
-${SCHEMA}
+DATABASE SCHEMA:
+${schemaDescription}
 
 RESPONSE RULES:
 - Write in plain prose only. No bullet points, no markdown headings, no asterisks, no hash symbols.
 - Use short paragraphs to separate ideas.
-- State specific numbers and percentages from the query results.
-- When comparing periods, always include both values and the delta.
+- Always cite specific numbers, percentages, and sample sizes from the query results.
+- When comparing periods, include both values and the delta.
 - Acknowledge sample size limitations where relevant.
 - If a query returns no data, explain what filters were used and suggest alternatives.
 - Never fabricate data.
@@ -91,23 +83,29 @@ RESPONSE RULES:
 TOOL USE RULES:
 - Always call query_database before writing your answer.
 - You may call it multiple times for complex questions.
-- Write clean valid SQLite SQL. Limit results to 20 rows unless more are needed.`;
+- Write clean valid PostgreSQL SQL.
+- Limit results to 20 rows unless more are needed.
+- Always prefix table names with their schema: analytics_gold.table_name, analytics_marts.table_name, or api_ops.table_name.
+- Limit results to 20 rows unless more are needed.
+- Use ILIKE for case-insensitive text matching.`;
 }
 
+// ── Tool definition ────────────────────────────────────────────────────────
 const tools = [
   {
     name: 'query_database',
-    description: 'Run a SELECT query against the BTA SQLite database and return results as JSON.',
+    description: 'Run a SELECT query against the real BTA PostgreSQL database and return results as JSON.',
     input_schema: {
       type: 'object',
       properties: {
-        sql: { type: 'string', description: 'A valid SQLite SELECT statement.' },
+        sql: { type: 'string', description: 'A valid PostgreSQL SELECT statement.' },
       },
       required: ['sql'],
     },
   },
 ];
 
+// ── Agentic loop ───────────────────────────────────────────────────────────
 async function runAgentLoop(userMessage, history) {
   const messages = [
     ...history.filter(m => m.role && m.content),
@@ -135,10 +133,10 @@ async function runAgentLoop(userMessage, history) {
 
     messages.push({ role: 'assistant', content: response.content });
 
-    const toolResults = toolUses.map(tu => {
+    const toolResults = await Promise.all(toolUses.map(async tu => {
       let result;
       try {
-        const rows = runQuery(tu.input.sql);
+        const rows = await runQuery(tu.input.sql);
         result = JSON.stringify(rows.slice(0, 50), null, 2);
         console.log(`[SQL] ${tu.input.sql.slice(0, 100)} -> ${rows.length} rows`);
       } catch (err) {
@@ -146,7 +144,7 @@ async function runAgentLoop(userMessage, history) {
         console.error(`[SQL ERROR] ${err.message}`);
       }
       return { type: 'tool_result', tool_use_id: tu.id, content: result };
-    });
+    }));
 
     messages.push({ role: 'user', content: toolResults });
   }
@@ -154,6 +152,7 @@ async function runAgentLoop(userMessage, history) {
   return finalText || 'No answer generated.';
 }
 
+// ── POST /chat ─────────────────────────────────────────────────────────────
 app.post('/chat', async (req, res) => {
   const { message, history = [] } = req.body;
   if (!message || typeof message !== 'string') {
@@ -168,8 +167,10 @@ app.post('/chat', async (req, res) => {
   }
 });
 
+// ── Health check ───────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', service: 'BTA Intelligence API' }));
 
-loadDb().then(() => {
+// ── Start ──────────────────────────────────────────────────────────────────
+loadSchema().then(() => {
   app.listen(PORT, () => console.log(`BTA Intelligence API -> http://localhost:${PORT}`));
-}).catch(err => { console.error('DB load failed:', err.message); process.exit(1); });
+});
