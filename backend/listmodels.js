@@ -10,4 +10,4 @@ https.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${process
       .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
       .forEach(m => console.log(m.name));
   });
-});
+});m 

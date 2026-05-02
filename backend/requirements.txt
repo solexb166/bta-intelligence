@@ -1,0 +1,10 @@
+flask
+flask-cors
+python-dotenv
+psycopg2-binary
+scikit-learn
+pandas
+numpy
+google-genai
+pymupdf
+python-docx
