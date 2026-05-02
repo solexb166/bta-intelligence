@@ -49,7 +49,7 @@ def load_chunks():
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i+batch_size]
         result = client.models.embed_content(
-            model="text-embedding-004",
+          model="gemini-embedding-001",
             contents=batch,
         )
         for emb in result.embeddings:
@@ -66,7 +66,7 @@ def search_docs(query, top_k=5):
     if not CHUNKS or not CHUNK_EMBEDDINGS:
         return []
     result = client.models.embed_content(
-        model="text-embedding-004",
+       model="gemini-embedding-001",
         contents=[query],
     )
     q_vec = np.array(result.embeddings[0].values).reshape(1, -1)
@@ -307,7 +307,7 @@ def upload_doc():
         texts = [c['text'] for c in new_chunks]
         for i in range(0, len(texts), 20):
             batch = texts[i:i+20]
-            result = client.models.embed_content(model="text-embedding-004", contents=batch)
+            result = client.models.embed_content(model="gemini-embedding-001", contents=batch)
             for emb in result.embeddings:
                 CHUNK_EMBEDDINGS.append(emb.values)
 

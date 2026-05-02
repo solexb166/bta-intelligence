@@ -1,43 +1,46 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
-// ── Icons ────────────────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const Icon = {
   Logo: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5"/>
+      <path d="M2 12l10 5 10-5"/>
     </svg>
   ),
   Chat: () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
   ),
   Search: () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </svg>
   ),
   Grid: () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
       <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
     </svg>
   ),
   TrendUp: () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
       <polyline points="17 6 23 6 23 12"/>
     </svg>
   ),
   Star: () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </svg>
   ),
   Send: () => (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
     </svg>
   ),
   Refresh: () => (
@@ -48,17 +51,19 @@ const Icon = {
   ),
   Menu: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
     </svg>
   ),
   Close: () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   ),
 };
 
-// ── Capabilities ──────────────────────────────────────────────────────────────
 const CAPABILITIES = [
   { id: 'nlqa',      Icon: Icon.Chat,    label: 'Natural language Q&A',   prompt: 'What are the top 5 brands by BHI score in the latest period?' },
   { id: 'gap',       Icon: Icon.Search,  label: 'Research gap detection',  prompt: 'Which survey questions have the fewest responses in the last 90 days?' },
@@ -80,7 +85,6 @@ const WELCOME = {
   isWelcome: true,
 };
 
-// ── Markdown renderer ─────────────────────────────────────────────────────────
 function renderMarkdown(text) {
   const lines = text.split('\n');
   const elements = [];
@@ -92,31 +96,29 @@ function renderMarkdown(text) {
     if (/^# /.test(line)) { elements.push(<h1 key={i}>{line.slice(2)}</h1>); i++; continue; }
     if (/^[-*] /.test(line)) {
       const items = [];
-      while (i < lines.length && /^[-*] /.test(lines[i])) { items.push(<li key={i}>{inlineFmt(lines[i].slice(2))}</li>); i++; }
+      while (i < lines.length && /^[-*] /.test(lines[i])) { items.push(<li key={i}>{fmt(lines[i].slice(2))}</li>); i++; }
       elements.push(<ul key={`ul-${i}`}>{items}</ul>); continue;
     }
     if (/^\d+\. /.test(line)) {
       const items = [];
-      while (i < lines.length && /^\d+\. /.test(lines[i])) { items.push(<li key={i}>{inlineFmt(lines[i].replace(/^\d+\. /, ''))}</li>); i++; }
+      while (i < lines.length && /^\d+\. /.test(lines[i])) { items.push(<li key={i}>{fmt(lines[i].replace(/^\d+\. /, ''))}</li>); i++; }
       elements.push(<ol key={`ol-${i}`}>{items}</ol>); continue;
     }
     if (/^---+$/.test(line.trim())) { elements.push(<hr key={i} />); i++; continue; }
     if (line.trim() === '') { elements.push(<br key={i} />); i++; continue; }
-    elements.push(<p key={i}>{inlineFmt(line)}</p>); i++;
+    elements.push(<p key={i}>{fmt(line)}</p>); i++;
   }
   return elements;
 }
 
-function inlineFmt(text) {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
-  return parts.map((part, i) => {
-    if (/^\*\*[^*]+\*\*$/.test(part)) return <strong key={i}>{part.slice(2, -2)}</strong>;
-    if (/^`[^`]+`$/.test(part)) return <code key={i}>{part.slice(1, -1)}</code>;
+function fmt(text) {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) => {
+    if (/^\*\*[^*]+\*\*$/.test(part)) return <strong key={i}>{part.slice(2,-2)}</strong>;
+    if (/^`[^`]+`$/.test(part)) return <code key={i}>{part.slice(1,-1)}</code>;
     return part;
   });
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [messages,    setMessages]    = useState([WELCOME]);
   const [history,     setHistory]     = useState([]);
@@ -124,7 +126,7 @@ export default function App() {
   const [loading,     setLoading]     = useState(false);
   const [active,      setActive]      = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const bottomRef  = useRef(null);
+  const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -133,20 +135,17 @@ export default function App() {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+    ta.style.height = Math.min(ta.scrollHeight, 150) + 'px';
   }, [input]);
 
   const sendMessage = async (text) => {
-    const msg = text || input.trim();
+    const msg = (text || input).trim();
     if (!msg || loading) return;
     setInput('');
-
     const userMsg = { role: 'user', content: msg };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
-
     const newHistory = [...history, { role: 'user', content: msg }];
-
     try {
       const res = await fetch('http://localhost:3000/chat', {
         method: 'POST',
@@ -185,50 +184,54 @@ export default function App() {
     <div className="app">
       {sidebarOpen && <div className="overlay" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Sidebar */}
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-        <div className="sidebar-brand">
-          <div className="sidebar-logo"><Icon.Logo /></div>
-          <div>
-            <div className="sidebar-name">BTA Intelligence</div>
-            <div className="sidebar-sub">Research Platform</div>
+        <div className="sidebar-top">
+          <div className="sidebar-brand">
+            <div className="sidebar-logo"><Icon.Logo /></div>
+            <div>
+              <div className="sidebar-name">BTA Intelligence</div>
+            </div>
+            <button className="sidebar-close" onClick={() => setSidebarOpen(false)}><Icon.Close /></button>
           </div>
-          <button className="sidebar-close" onClick={() => setSidebarOpen(false)}><Icon.Close /></button>
+          <div className="sidebar-sub">Research Platform</div>
         </div>
 
-        <div className="sidebar-section">Capabilities</div>
-        <nav className="sidebar-nav">
-          {CAPABILITIES.map(cap => (
-            <button
-              key={cap.id}
-              className={`cap-btn${active === cap.id ? ' active' : ''}`}
-              onClick={() => handleCapability(cap)}
-              disabled={loading}
-            >
-              <cap.Icon />
-              {cap.label}
-            </button>
-          ))}
-        </nav>
+        <div className="sidebar-nav-wrapper">
+          <div className="sidebar-section-label">Capabilities</div>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {CAPABILITIES.map(cap => (
+              <button
+                key={cap.id}
+                className={`cap-btn${active === cap.id ? ' active' : ''}`}
+                onClick={() => handleCapability(cap)}
+                disabled={loading}
+              >
+                <span className="cap-icon"><cap.Icon /></span>
+                {cap.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        <div className="sidebar-divider" />
-        <button className="clear-btn" onClick={clearChat}>
-          <Icon.Refresh /> New conversation
-        </button>
+        <div className="sidebar-footer">
+          <button className="clear-btn" onClick={clearChat}>
+            <Icon.Refresh /> New conversation
+          </button>
+        </div>
       </aside>
 
-      {/* Chat */}
       <main className="chat">
-        {/* Mobile header */}
         <div className="mobile-header">
           <button className="hamburger" onClick={() => setSidebarOpen(true)}><Icon.Menu /></button>
           <span className="mobile-title">BTA Intelligence</span>
         </div>
 
-        {/* Desktop header */}
         <div className="chat-header">
-          <div className="chat-header-title">Research Assistant</div>
-          <div className="chat-header-status">
+          <div className="header-left">
+            <div className="header-title">Research Assistant</div>
+            <div className="header-sub">Budtenders Association Analytics</div>
+          </div>
+          <div className="header-status">
             <div className="status-dot" />
             Connected to live database
           </div>
@@ -264,7 +267,6 @@ export default function App() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         <div className="input-bar">
           <div className="input-wrap">
             <textarea
