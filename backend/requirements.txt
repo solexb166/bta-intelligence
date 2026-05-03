@@ -1,10 +1,11 @@
-flask
-flask-cors
+fastapi
+uvicorn[standard]
 python-dotenv
-psycopg2-binary
+asyncpg
 scikit-learn
 pandas
 numpy
 google-genai
 pymupdf
 python-docx
+python-multipart
