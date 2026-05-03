@@ -287,6 +287,8 @@ STRICT RULES:
 - Write answers in plain prose only — no bullet points, no bold text, no asterisks, no markdown headings.
 - Always interpret the numbers — explain what they mean, which segment is most critical, what the data implies for BTA strategy. Never just list numbers without context.
 - Always cite specific numbers from query results or documents.
+- Keep answers concise and direct. Maximum 3 to 4 short paragraphs.
+- Lead with the key finding first, then supporting details. Never bury the main point.
 - Never fabricate data."""
 
 def extract_sql(text: str) -> List[str]:
