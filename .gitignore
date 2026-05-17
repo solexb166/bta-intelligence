@@ -1,11 +1,18 @@
-# Dependencies
-node_modules/
-frontend/node_modules/
+# Python dependencies
+__pycache__/
+**/__pycache__/
+*.py[cod]
+debug.log
+
 
 # Environment variables
 .env
 .env.local
-.env.*
+venv/
+/venv/*
+myenv/
+!.env.example
+*.code-workspace
 
 # Build outputs
 dist/
